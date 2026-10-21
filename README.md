@@ -23,3 +23,9 @@
 - `outline/OUTLINE.md` — 24 章细纲
 - `outline/fact-anchors-2026.md` — 2026 年现实事实锚点（推演起点坐标）
 - `chapters/` — 正文
+
+## 构建（对齐《白话软件架构设计》的管线）
+
+- **网页版**：Astro + Nimbus Docs 开源库，源码在 `site/`，push 到 main 后 GitHub Actions 自动构建并部署到上面的在线阅读地址。本地预览：`cd site && npm ci && npm run dev`（prebuild 会从 `chapters/` 自动导入最新书稿）。
+- **PDF / EPUB**：同一条 Actions 管线的 `build-books` job：`tools/assemble_manuscript.py` 把 24 章装配为 `manuscript.md`，再用 Pandoc + XeLaTeX（Noto Sans CJK）构建 PDF、用 `epub-meta.yaml` + `epub-style.css`（正文首行缩进 2em）构建 EPUB，产物以 artifact `books-pdf-epub` 形式保留 90 天，在 Actions 运行页面下载。
+- **封面**：尚未定稿。定稿后把 `images/cover.jpg` 与 `cover.tex` 放入仓库，并在 workflow 的 build-books 步骤启用注释里预留的 `--include-before-body` / `--epub-cover-image` 参数即可。

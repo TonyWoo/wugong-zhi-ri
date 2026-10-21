@@ -1,7 +1,9 @@
-# 构建 Nimbus 文档站并部署到 GitHub Pages
+# 构建 Nimbus 文档站并部署到 GitHub Pages；同时构建 PDF / EPUB（artifact）
 #
-# push 到 main 时触发：从 chapters/ 导入 24 章书稿，
-# 构建 Nimbus 静态站，部署到 https://tonywoo.github.io/wugong-zhi-ri/
+# 结构对齐《白话软件架构设计》仓库的 nimbus.yml：
+#   build       —— Nimbus 站点构建（prebuild 从 chapters/ 导入 24 章）
+#   build-books —— 装配 manuscript.md 后用 Pandoc + XeLaTeX 构建 PDF / EPUB
+#   deploy      —— 部署站点到 https://tonywoo.github.io/wugong-zhi-ri/
 # 注意：仓库必须保持公开，改回私有后 Pages 会下线（免费账号限制）。
 
 name: web-book-site
@@ -12,6 +14,11 @@ on:
     paths:
       - 'chapters/**'
       - 'site/**'
+      - 'tools/**'
+      - 'book.yaml'
+      - 'epub-meta.yaml'
+      - 'epub-style.css'
+      - 'cover.tex'
       - '.github/workflows/site.yml'
   workflow_dispatch:
 
@@ -54,6 +61,47 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site/dist
+
+  build-books:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Pandoc
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq pandoc
+
+      - name: 安装 XeLaTeX + 中文支持
+        run: |
+          sudo apt-get install -y -qq texlive-xetex texlive-lang-chinese texlive-latex-extra latex-cjk-all fonts-noto-cjk
+
+      - name: 装配手稿
+        run: python3 tools/assemble_manuscript.py manuscript.md
+
+      # 封面定稿后按《白话软件架构设计》的做法启用：
+      #   PDF  加 --include-before-body=cover.tex（cover.tex 引用 images/cover.jpg）
+      #   EPUB 加 --epub-cover-image=images/cover.jpg
+      - name: 构建 PDF
+        run: |
+          pandoc manuscript.md -o wugong-zhi-ri.pdf \
+            --toc --toc-depth=2 -V toc-title="目录" \
+            --pdf-engine=xelatex \
+            -V CJKmainfont="Noto Sans CJK SC" -V CJKmonofont="Noto Sans Mono CJK SC"
+
+      - name: 构建 EPUB
+        run: |
+          pandoc manuscript.md epub-meta.yaml -o wugong-zhi-ri.epub \
+            --toc --toc-depth=2 \
+            --css=epub-style.css
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: books-pdf-epub
+          path: |
+            wugong-zhi-ri.pdf
+            wugong-zhi-ri.epub
+          retention-days: 90
 
   deploy:
     needs: build
