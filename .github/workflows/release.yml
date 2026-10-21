@@ -60,7 +60,7 @@ jobs:
       - name: 构建 EPUB
         run: |
           pandoc manuscript.md epub-meta.yaml -o wugong-zhi-ri.epub \
-            --toc --toc-depth=2 \
+            --toc --toc-depth=2 --split-level=2 \
             --css=epub-style.css
 
       - name: 创建 Release

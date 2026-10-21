@@ -51,11 +51,11 @@ jobs:
       - run: npm run build
         working-directory: site
 
-      - name: 检查页面数（落地页 1 + 24 章）
+      - name: 检查页面数（落地页 1 + 卷页 3 + 24 章）
         run: |
           n=$(find src/content/docs -name '*.md' | wc -l)
           echo "docs pages: $n"
-          test "$n" -eq 25
+          test "$n" -eq 28
         working-directory: site
 
       - uses: actions/upload-pages-artifact@v3
@@ -92,7 +92,7 @@ jobs:
       - name: 构建 EPUB
         run: |
           pandoc manuscript.md epub-meta.yaml -o wugong-zhi-ri.epub \
-            --toc --toc-depth=2 \
+            --toc --toc-depth=2 --split-level=2 \
             --css=epub-style.css
 
       - uses: actions/upload-artifact@v4
